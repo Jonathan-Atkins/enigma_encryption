@@ -18,8 +18,12 @@ class Enigma
    }
   end
 
+  def char_set
+    ("a".."z").to_a << " "
+  end
+
   def rewrite(encryption)
-    
+
   end
   
 end
