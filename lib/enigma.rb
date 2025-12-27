@@ -40,7 +40,7 @@ class Enigma
       shifted_char = char_set[shifted_idx]
       is_upper ? shifted_char.upcase : shifted_char
     else
-      char
+      return char
     end
   end
 
