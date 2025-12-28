@@ -1,120 +1,140 @@
 require 'date'
 
 class Enigma
+  CHAR_SET = (('a'..'z').to_a << ' ').freeze
+  SHIFT_KEYS = %i[a b c d].freeze
 
   def encrypt(message = '', key = nil, date = nil)
-    key_str   = key_check(key)
-    date_str  = date_check(date)
-    shifts    = shifts_for(key_str, date_str)
-    encrypted = encrypt_message(message, shifts)
+    key_str = normalize_key(key)
+    date_str = normalize_date(date)
+    shifts = build_shifts(key_str, date_str)
+
     {
-      encryption: encrypted,
+      encryption: shift_message(message.to_s, shifts, :encrypt),
       key: key_str,
       date: date_str
     }
   end
 
-  # Encrypts the message, shifting only valid chars, leaving others (including space) in place
-  def encrypt_message(message, shifts)
-    shift_keys  = [:a, :b, :c, :d]
+  def decrypt(ciphertext, key, date = nil)
+    key_str = normalize_key(key, allow_random: false)
+    date_str = normalize_date(date)
+    shifts = build_shifts(key_str, date_str)
+
+    {
+      decryption: shift_message(ciphertext.to_s, shifts, :decrypt),
+      key: key_str,
+      date: date_str
+    }
+  end
+
+  def crack(ciphertext, date = nil, known_suffix = ' end')
+    date_str = normalize_date(date)
+    key_str = find_key(ciphertext, date_str, known_suffix)
+    raise ArgumentError, 'Unable to crack message with given date' unless key_str
+
+    decrypt(ciphertext, key_str, date_str)
+  end
+
+  def encrypt_file(input_path, output_path, key = nil, date = nil)
+    content = File.read(input_path)
+    result = encrypt(content, key, date)
+    File.write(output_path, result[:encryption])
+    result
+  end
+
+  def decrypt_file(input_path, output_path, key, date = nil)
+    content = File.read(input_path)
+    result = decrypt(content, key, date)
+    File.write(output_path, result[:decryption])
+    result
+  end
+
+  private
+
+  def normalize_key(key, allow_random: true)
+    return random_key if key.nil? && allow_random
+
+    key_str = key.to_s
+    unless key_str.match?(/\A\d{5}\z/)
+      raise ArgumentError, 'Key must be a 5-digit string'
+    end
+    key_str
+  end
+
+  def normalize_date(date)
+    return today_string if date.nil?
+
+    date_str = date.to_s
+    unless date_str.match?(/\A\d{4,6}\z/)
+      raise ArgumentError, 'Date must be a numeric string in DDMMYY format'
+    end
+    date_str
+  end
+
+  def random_key
+    format('%05d', rand(0..99_999))
+  end
+
+  def today_string
+    Date.today.strftime('%d%m%y')
+  end
+
+  def build_shifts(key_str, date_str)
+    keys = split_keys(key_str)
+    offsets = offset_from(date_str)
+
+    keys.each_with_object({}) do |(name, value), hash|
+      hash[name] = value + offsets[name]
+    end
+  end
+
+  def split_keys(key_str)
+    SHIFT_KEYS.each_with_index.to_h do |name, index|
+      [name, key_str[index, 2].to_i]
+    end
+  end
+
+  def offset_from(date_str)
+    squared = date_str.to_i**2
+    last_four = squared.to_s[-4..].rjust(4, '0')
+
+    SHIFT_KEYS.each_with_index.to_h do |name, index|
+      [name, last_four[index].to_i]
+    end
+  end
+
+  def shift_message(message, shifts, direction)
     shift_index = 0
-    result = message.chars.map do |char|
-      if char_set.include?(char.downcase)
-        shifted = shift_char(char, shifts[shift_keys[shift_index % 4]])
+
+    message.chars.map do |char|
+      if transformable?(char)
+        shifted = shift_char(char, shifts[SHIFT_KEYS[shift_index % SHIFT_KEYS.length]], direction)
         shift_index += 1
         shifted
       else
         char
       end
-    end
-    result.join.downcase
+    end.join
   end
 
-  # Shifts a single character by the given amount, preserving case
-  def shift_char(char, shift)
-    is_upper = char =~ /[A-Z]/
+  def shift_char(char, shift_value, direction)
+    return char unless transformable?(char)
+
     base_char = char.downcase
-    if char_set.include?(base_char)
-      idx = char_set.index(base_char)
-      shifted_idx = (idx + shift) % char_set.length
-      shifted_char = char_set[shifted_idx]
-      is_upper ? shifted_char.upcase : shifted_char
-    else
-      return char
+    amount = direction == :decrypt ? -shift_value : shift_value
+    shifted_char = CHAR_SET[(CHAR_SET.index(base_char) + amount) % CHAR_SET.length]
+
+    char.match?(/[A-Z]/) ? shifted_char.upcase : shifted_char
+  end
+
+  def transformable?(char)
+    CHAR_SET.include?(char.downcase)
+  end
+
+  def find_key(ciphertext, date_str, known_suffix)
+    (0..99_999).lazy.map { |number| format('%05d', number) }.find do |candidate|
+      decrypt(ciphertext, candidate, date_str)[:decryption].end_with?(known_suffix)
     end
-  end
-
-  #!key checks
-  def key_check(key)
-    key.nil? ? self.randomize_key : key
-  end 
-
-  # .rjust(5, "0") pads the string with leading zeros if needed, ensuring it is always 5 characters long.
-  def randomize_key
-    rand(10000..99999).to_s.rjust(5, "0")
-  end
-
-  #*date checks
-
-  def date_check(date)
-    date.nil? ? self.create_date : date
-  end
-
-  def create_date
-    extract_date(Date.today.strftime("%d%m%y"))
-  end
- 
-  #!Shifts
-  def shifts_for(key, date)
-    keys    = split_keys(key)
-    offsets = split_date(extract_date(date))
-    create_shift(offsets, keys)
-  end
-
-  def split_keys(key)
-    {
-      a: key[0..1],
-      b: key[1..2],
-      c: key[2..3],
-      d: key[3..4]
-    }
-  end
-
-  def split_date(date)
-    {
-      a: date[0],
-      b: date[1],
-      c: date[2],
-      d: date[3]
-    }
-  end
-
-  def extract_date(date)
-    square_date(date).to_s[-4..-1]
-  end
-
-  def square_date(date)
-    date.to_i ** 2
-  end
-
-  def create_shift(dates,keys)
-    keys.keys.each_with_object({}) do |k, hash|
-      hash[k] = keys[k].to_i + dates[k].to_i
-    end
-  end
-
-  # Returns true if all characters in the message are in the char_set
-
-  def valid_message_chars?(message)
-    message.chars.all? { |char|  char_set.include?(char) }
-  end
-
-  # Converts invalid message characters to a valid char (default: space)
-  # Returns the allowed character set for mes sages
-  def char_set
-    ("a".."z").to_a << " "
   end
 end
-
-
-
