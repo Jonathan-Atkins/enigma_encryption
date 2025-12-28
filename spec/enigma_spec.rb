@@ -2,127 +2,103 @@ require 'spec_helper'
 require './lib/enigma'
 
 RSpec.describe Enigma do
+  let(:enigma) { described_class.new }
+  let(:key) { '02715' }
+  let(:date) { '040895' }
 
-    it 'encrypts message with spaces and valid chars, leaving spaces in place' do
-      expect(@enigma.encrypt("hello world", "02715", "040895")).to eq(
-        {
-          encryption: "keder ohulw",
-          key: "02715",
-          date: "040895"
-        }
-      )
+  describe '#encrypt' do
+    it 'encrypts message with spaces and valid chars, leaving punctuation in place' do
+      result = enigma.encrypt('hello world!', key, date)
+
+      expect(result).to eq({
+        encryption: 'keder ohulw!',
+        key: key,
+        date: date
+      })
     end
 
-    it 'encrypts message with uppercase letters, leaving spaces in place' do
-      expect(@enigma.encrypt("HELLO WORLD", "02715", "040895")).to eq(
-        {
-          encryption: "KEDER OHULW",
-          key: "02715",
-          date: "040895"
-        }
-      )
+    it 'preserves uppercase letters while shifting' do
+      result = enigma.encrypt('HELLO world', key, date)
+
+      expect(result[:encryption]).to eq('KEDER ohulw')
     end
 
-    it 'encrypts message with invalid characters, leaving them in place' do
-      expect(@enigma.encrypt("hello world!", "02715", "040895")).to eq(
-        {
-          encryption: "keder ohulw!",
-          key: "02715",
-          date: "040895"
-        }
-      )
+    it 'uses generated key and today date when values are omitted' do
+      allow(Date).to receive(:today).and_return(Date.new(1995, 8, 4))
+
+      result = enigma.encrypt('hello world')
+
+      expect(result[:key]).to match(/\A\d{5}\z/)
+      expect(result[:date]).to eq('040895')
+      expect(result[:encryption]).to be_a(String)
     end
-  before(:each) do
-    @enigma = Enigma.new
-    @date   = "040895"
+
+    it 'raises an error when an invalid key is provided' do
+      expect { enigma.encrypt('hi', '1234', date) }.to raise_error(ArgumentError)
+    end
+
+    it 'raises an error when an invalid date is provided' do
+      expect { enigma.encrypt('hi', key, 'bad') }.to raise_error(ArgumentError)
+    end
   end
 
-  it 'exists' do
-    expect(@enigma).to be_an_instance_of(Enigma)
+  describe '#decrypt' do
+    it 'decrypts message with provided key and date' do
+      ciphertext = enigma.encrypt('hello world', key, date)[:encryption]
+
+      expect(enigma.decrypt(ciphertext, key, date)).to eq({
+        decryption: 'hello world',
+        key: key,
+        date: date
+      })
+    end
+
+    it 'decrypts message with uppercase letters preserved' do
+      ciphertext = enigma.encrypt('HELLO world', key, date)[:encryption]
+
+      expect(enigma.decrypt(ciphertext, key, date)[:decryption]).to eq('HELLO world')
+    end
+
+    it 'does not generate a key when missing for decrypt' do
+      ciphertext = enigma.encrypt('test message', key, date)[:encryption]
+
+      expect { enigma.decrypt(ciphertext, nil, date) }.to raise_error(ArgumentError)
+    end
   end
 
-  it 'returns encyrpted message' do
-    expect(@enigma.encrypt("hello world", "02715", "040895")).to eq(
-      {
-      encryption: "keder ohulw",
-      key: "02715",
-      date: "040895"
-      }
-    )
+  describe '#crack' do
+    it 'brute forces the key using the known suffix' do
+      encrypted = enigma.encrypt('hello world end', key, date)[:encryption]
+
+      result = enigma.crack(encrypted, date)
+
+      expect(result[:decryption]).to eq('hello world end')
+      expect(result[:key]).to eq(key)
+      expect(result[:date]).to eq(date)
+    end
+
+    it 'raises an error if a key cannot be found' do
+      allow(enigma).to receive(:find_key).and_return(nil)
+
+      expect { enigma.crack('!!!', date) }.to raise_error(ArgumentError)
+    end
   end
 
-  it 'can check if a key exists' do
-    result = @enigma.encrypt("hello world", "02715", "040895")
-    expect(@enigma.key_check(result[:key])).to eq("02715")
-  end
-  
-  it 'can create random key' do
-    key = @enigma.randomize_key
-    expect(key).to be_a(String)
-    expect(key.length).to eq(5)
-    expect(key).to match(/\A\d{5}\z/)
-  end
+  describe 'file helpers' do
+    it 'encrypts and decrypts file contents while leaving punctuation untouched' do
+      Dir.mktmpdir do |dir|
+        input = File.join(dir, 'input.txt')
+        encrypted_output = File.join(dir, 'encrypted.txt')
+        decrypted_output = File.join(dir, 'decrypted.txt')
+        File.write(input, 'Hello, world!')
 
-  it 'splits a 5-digit key into A, B, C, D keys' do
-    key = "02715"
-    result = @enigma.split_keys(key)
-    expect(result).to eq({
-      a: "02",
-      b: "27",
-      c: "71",
-      d: "15"
-    })
-  end
+        encrypt_result = enigma.encrypt_file(input, encrypted_output, key, date)
+        decrypt_result = enigma.decrypt_file(encrypted_output, decrypted_output, key, date)
 
-  it 'can check if a date exists' do
-    result = @enigma.encrypt("hello world", "02715", "040895")
-    expect(@enigma.date_check(result[:date])).to eq("040895")
-  end
-
-  it 'can generate todays date' do
-    date = @enigma.create_date
-    expect(date).to be_a(String)
-    expect(date.length).to eq(4)
-    expect(date).to match(/\A\d{4}\z/)
-  end
-
-  it 'squares the date' do
-    expect(@date).to eq("040895")
-    expect(@enigma.square_date(@date)).to eq(1672401025)
-  end
-
-  it 'extracts the last four digits from the squared date' do
-    result = @enigma.extract_date(@date)
-    expect(result.length).to eq(4)
-  end
-
-  it 'splits the date into A,B,C,D keys' do
-    date = @enigma.split_date("1234")
-    
-    expect(date[:a]).to eq("1")
-    expect(date[:b]).to eq("2")
-    expect(date[:c]).to eq("3")
-    expect(date[:d]).to eq("4")
-  end
-
-  it 'creates the shifts' do
-    result = @enigma.encrypt("hello world", "02715", "040895")
-    shifts = @enigma.shifts_for(result[:key],result[:date])
-    
-    expect(shifts).to eq({
-      a: 3,
-      b: 27,
-      c: 73,
-      d: 20
-    })
-  end
-
-  it 'returns true if all message characters are in the char_set' do
-    # expect(@enigma.valid_message_chars?('hello world')).to eq(true)
-    expect(@enigma.valid_message_chars?('hello world!')).to eq(false)
-    expect(@enigma.valid_message_chars?('HELLO')).to eq(false)
-    expect(@enigma.valid_message_chars?('good_morning')).to eq(false)
-    expect(@enigma.valid_message_chars?('abc xyz')).to eq(true)
+        expect(encrypt_result[:encryption]).to eq('Keder, ohulw!')
+        expect(decrypt_result[:decryption]).to eq('Hello, world!')
+        expect(File.read(decrypted_output)).to eq('Hello, world!')
+      end
+    end
   end
 end
- 
