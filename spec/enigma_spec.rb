@@ -99,9 +99,9 @@ RSpec.describe 'Enigma'do
 
   it 'can crack a message with todays date' do
     message = "vjqtbeaweqihssi"
-    result  = @enigma.crack(message)
+    results  = @enigma.crack(message)
 
-    expect(result).to eq(
+    expect(results).to eq(
       {
         decryption: result[:decryption],
         date: Date.today.strftime("%d%m%y"),
