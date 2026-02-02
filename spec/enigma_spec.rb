@@ -1,9 +1,10 @@
 require './lib/enigma'
+require 'date'
 
 RSpec.describe 'Enigma'do
   before(:each) do
     @enigma             = Enigma.new
-    @default_encryption = @enigma.encrypt("hello world", key: "02715", date: "040895")
+    @default_encryption = @enigma.encrypt("hello world", "02715","040895")
   end
 
   it 'exists' do
@@ -14,16 +15,6 @@ RSpec.describe 'Enigma'do
     expect(@default_encryption).to eq(
       {
         encryption: "keder ohulw",
-        key: "02715",
-        date: "040895"
-      }
-    )
-  end
-
-  it 'can crack a message' do
-    expect(@enigma.decrypt("keder ohulw", key: "02715", date: "040895")).to eq(
-      {
-        encryption: "hello world",
         key: "02715",
         date: "040895"
       }
@@ -90,5 +81,32 @@ RSpec.describe 'Enigma'do
     message = "hello world"
 
     expect(@enigma.format_message(message)).to eq(["h", "e", "l", "l", "o", " ", "w", "o", "r", "l", "d"])
+  end
+
+  it 'can crack a message with a date' do
+    message = "vjqtbeaweqihssi"
+    key     = "08304"
+    date    = "291018"
+
+    expect(@enigma.crack(message,date,key)).to eq(
+      {
+        decryption: "hello world end",
+        date: "291018",
+        key: "08304"
+      }
+    )
+  end
+
+  it 'can crack a message with todays date' do
+    message = "vjqtbeaweqihssi"
+    result  = @enigma.crack(message)
+
+    expect(result).to eq(
+      {
+        decryption: result[:decryption],
+        date: Date.today.strftime("%d%m%y"),
+        key: result[:key]
+      }
+    )
   end
 end

@@ -9,9 +9,7 @@ class Enigma
     @encrypted_message = ''
   end
 
-  # def encrypt(message, key:, date:)
   def encrypt(message, key = nil, date = nil)
-    #*we are using a memoization to determine if a key is present, if not we will create one,same for date
     key  ||= random_key
     date ||= Date.today.strftime("%d%m%y")
     {
@@ -21,7 +19,7 @@ class Enigma
     }
   end
 
-  def decrypt(message, key:, date:)
+  def decrypt(message, key= nil, date = nil)
     key  ||= random_key
     date ||= Date.today.strftime("%d%m%y")
     {
@@ -43,6 +41,15 @@ class Enigma
   def decrypt_message(message,key,date)
     shifts = shift_counts(date_offset(date), key_placements(key))
     unshift_characters(shifts,format_message(message))
+  end
+
+  def crack(message,date = nil,key =nil)
+    cracked_message = decrypt(message,key,date)
+    {
+      decryption: cracked_message[:decryption],
+      date: cracked_message[:date],
+      key: cracked_message[:key]
+    }
   end
 
   def shift_counts(date_offset,key_placements)
@@ -124,7 +131,6 @@ class Enigma
     @encrypted_message << alphabet[shift_count]
   end
 
-  #!setup for keys and date
   def key_placements(key)
     {
       A:key[0..1].to_i,
@@ -147,39 +153,19 @@ class Enigma
   end
 end
 
-enigma = Enigma.new
+# enigma                         = Enigma.new
+# encrypted                      = enigma.encrypt("hello world", "02715","040895")
+# decrypted                      = enigma.decrypt("keder ohulw", "02715","040895")
+# # cracked                        = enigma.decrypt("vjqtbeaweqihssi","08304", "291018")
+# # cracked_with_date              = enigma.decrypt("vjqtbeaweqihssi", "291018")
+# encrypt_message_only           = enigma.encrypt("hello world","02715")
+# world_end                      = enigma.encrypt("hellow world end", "08304", "291018")
+# cracked                        = enigma.crack("vjqtbeaweqihssi", "291018") 
 
-puts encrypt_message = enigma.encrypt("Hello World", key = "02715", date = "040895")
-puts decrypt_message = enigma.enigma.decrypt("keder ohulw", "02715", "040895")
-
-
-# enigma               = Enigma.new
-# encrypted            = enigma.encrypt("hello world", key: "02715", date: "040895")
-# decrypted            = enigma.decrypt("keder ohulw", key: "02715", date: "040895")
-# encrypt_message_only = enigma.encrypt("hello world", key: nil, date: nil)
 
 
 # puts "Encrypted Message: #{encrypted}"
 # puts "Decrypted Message: #{decrypted}"
 # puts "Message Only: #{encrypt_message_only}"
-# puts enigma.encrypt("hello world end", key:"08304", date:"291018")
-
-
-# File.write(output,)
-
-
-
-
-# enigma = Enigma.new
-# require 'pry-nav'; binding.pry
-# result = enigma.encrypt(message, key: nil, date: nil)
-
-
-# puts "Create #{output} with the key #{result[:key]} and the date #{result[:date]}"
-
-
-
-# input << 
-# date  = ARGV[2]
-
-
+# puts "World End: #{world_end}"
+# puts "Cracked: #{cracked}"
