@@ -1,2 +1,0 @@
-I should be the first line of text
-I should be after the first line of text, so second

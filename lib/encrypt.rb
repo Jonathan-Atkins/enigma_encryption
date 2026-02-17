@@ -1,19 +1,19 @@
 require_relative 'enigma'
+require './modules/file_io'
+
+# print "Provide message to encrypt:\n"
+# message = $stdin.gets.chomp
+message = FileIo.print_message 
 
 
-print "Provide message to encrypt:\n"
-message = $stdin.gets.chomp
-
-input  = ARGV[0]
+# input  = ARGV[0]
 output = ARGV[1]
 
-File.write(input,message)
+# File.write(input,message)
+content = FileIo.write_and_read_message(ARGV[0], message)
 
-content = File.read(input)
+result = FileIo.enigma_instance.encrypt(content)
 
-enigma = Enigma.new
-
-result = enigma.encrypt(content)
 
 key  = result[:key]
 date = result[:date]

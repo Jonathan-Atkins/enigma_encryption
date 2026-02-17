@@ -24,8 +24,8 @@ RSpec.describe 'Enigma'do
   it 'can generate random keys' do
     key = @enigma.random_key
     expect(key).to be_a(String)
-    expect(key.length).to eq(6)
-    expect(key).to match(/^\d{6}$/)
+    expect(key.length).to eq(5)
+    expect(key).to match(/^\d{5}$/)
   end
 
   it 'has a character set' do
@@ -84,11 +84,12 @@ RSpec.describe 'Enigma'do
   end
 
   it 'can crack a message with a date' do
+    @enigma.encrypt("hello world end", "08304", "291018")
+    
     message = "vjqtbeaweqihssi"
-    key     = "08304"
     date    = "291018"
 
-    expect(@enigma.crack(message,date,key)).to eq(
+    expect(@enigma.crack(message,date)).to eq(
       {
         decryption: "hello world end",
         date: "291018",
@@ -99,9 +100,9 @@ RSpec.describe 'Enigma'do
 
   it 'can crack a message with todays date' do
     message = "vjqtbeaweqihssi"
-    results  = @enigma.crack(message)
+    result  = @enigma.crack(message)
 
-    expect(results).to eq(
+    expect(result).to eq(
       {
         decryption: result[:decryption],
         date: Date.today.strftime("%d%m%y"),

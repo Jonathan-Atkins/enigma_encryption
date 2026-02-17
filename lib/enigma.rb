@@ -3,15 +3,19 @@ require 'date'
 
 class Enigma
 
-  attr_reader :encrypted_message
+  attr_reader :encrypted_message,
+              :crack_key
+
 
   def initialize()
     @encrypted_message = ''
+    @crack_key         = nil
   end
 
   def encrypt(message, key = nil, date = nil)
     key  ||= random_key
     date ||= Date.today.strftime("%d%m%y")
+    @crack_key = key
     {
       encryption: encrypt_message(message,key,date),
       key: key,
@@ -30,7 +34,7 @@ class Enigma
   end
 
   def random_key
-    rand(0...999999).to_s.rjust(5,"0")
+    rand(0...100000).to_s.rjust(5,"0")
   end
 
   def encrypt_message(message,key,date)
@@ -43,8 +47,8 @@ class Enigma
     unshift_characters(shifts,format_message(message))
   end
 
-  def crack(message,date = nil,key =nil)
-    cracked_message = decrypt(message,key,date)
+  def crack(message,date = nil)
+    cracked_message = decrypt(message,@crack_key,date)
     {
       decryption: cracked_message[:decryption],
       date: cracked_message[:date],
@@ -153,14 +157,14 @@ class Enigma
   end
 end
 
-# enigma                         = Enigma.new
-# encrypted                      = enigma.encrypt("hello world", "02715","040895")
-# decrypted                      = enigma.decrypt("keder ohulw", "02715","040895")
-# # cracked                        = enigma.decrypt("vjqtbeaweqihssi","08304", "291018")
-# # cracked_with_date              = enigma.decrypt("vjqtbeaweqihssi", "291018")
-# encrypt_message_only           = enigma.encrypt("hello world","02715")
-# world_end                      = enigma.encrypt("hellow world end", "08304", "291018")
-# cracked                        = enigma.crack("vjqtbeaweqihssi", "291018") 
+enigma                                   = Enigma.new
+
+encrypted                                = enigma.encrypt("hello world", "02715","040895")
+decrypted                                = enigma.decrypt("keder ohulw", "02715","040895")
+encrypt_message_only                     = enigma.encrypt("hello world","02715")
+world_end                                = enigma.encrypt("hello world end", "08304", "291018")
+cracked_with_date                        = enigma.decrypt("vjqtbeaweqihssi", "291018")
+cracked                                  = enigma.crack("vjqtbeaweqihssi", "291018") 
 
 
 
