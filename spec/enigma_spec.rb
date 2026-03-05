@@ -37,4 +37,21 @@ RSpec.describe 'Enigma'do
 
     expect(@enigma.offset(num)).to eq('1025')
   end
+
+  it 'can generate a key' do
+    expect(@enigma.generate_key).to match(/^\d{5}$/)
+  end
+
+  it 'can set key_shift values' do
+    key = '02715'
+
+    expect(@enigma.key_shifts(key)).to eq(
+      {
+        A: '02',
+        B: '27',
+        C: '71',
+        D: '15'
+      }
+    )
+  end
 end
