@@ -1,17 +1,26 @@
 require './lib/enigma'
 
-RSpec.describe 'Enigma'do
+
+require 'stringio'
+
+RSpec.describe 'Enigma' do
   before(:each) do
+    input = StringIO.new("hello world\n040895\n02715\n")
+    @orig_stdin = $stdin
+    $stdin = input
     @enigma = Enigma.new
   end
 
-  it 'exists' do
-
-  expect(@enigma).to be_an(Object)
+  after(:each) do
+    $stdin = @orig_stdin
   end
 
-  xit 'can encrypt a message with a key and date' do 
-    expect(@enigma.encrypt("hello world", "02715","040895")).to eq(
+  it 'exists' do
+    expect(@enigma).to be_an(Object)
+  end
+
+  it 'can encrypt a message with a key and date' do 
+    expect(@enigma.encrypt).to eq(
       {
         encryption: "keder ohulw",
         key: "02715",
@@ -19,12 +28,16 @@ RSpec.describe 'Enigma'do
       })
   end
 
-  it 'can downcase and split messages' do
-    expect(@enigma.tokenize("HELLO WORLD")).to eq(["h", "e", "l", "l", "o", " ", "w", "o", "r", "l", "d"])
-  end
-
-  it 'can set characters' do 
-    expect(@enigma.char_set).to eq(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", " "])
+  it 'can create date shifts' do
+    date = '040895'
+    
+    expect(@enigma.date_shifts(date)).to eq(
+      {
+        A:'1',
+        B:'0',
+        C:'2',
+        D:'5'
+      })
   end
 
   it 'squares the dates' do
@@ -35,7 +48,7 @@ RSpec.describe 'Enigma'do
   it 'can get last four digits of a number' do
     num = 1672401025
 
-    expect(@enigma.offset(num)).to eq('1025')
+    expect(@enigma.last_four(num)).to eq('1025')
   end
 
   it 'can generate a key' do
@@ -53,5 +66,33 @@ RSpec.describe 'Enigma'do
         D: '15'
       }
     )
+  end
+
+  it 'can caluclate final shifts' do
+    date_shifts = { A:'1', B:'0', C:'2', D:'5' }
+    key_shifts  = { A: '02', B: '27', C: '71', D: '15' }
+    
+    expect(@enigma.final_shifts(date_shifts, key_shifts)).to eq(
+      {:A=>3, :B=>27, :C=>73, :D=>20}
+      )
+  end
+
+  it "can sum a single shift pair" do
+    date_value = { A: "1", B: "0", C: "2", D: "5" }
+    key_value  = { A: "02", B: "27", C: "71", D: "15" }
+
+    date_shifts = { A:'1', B:'0', C:'2', D:'5' }
+    key_shifts  = { A: '02', B: '27', C: '71', D: '15' }
+
+    expect(@enigma.sum_shift_pair(date_value[:A], key_value[:A])).to eq(3)
+    expect(@enigma.sum_shift_pair(date_value[:B], key_value[:B])).to eq(27)
+    expect(@enigma.sum_shift_pair(date_value[:C], key_value[:C])).to eq(73)
+    expect(@enigma.sum_shift_pair(date_value[:D], key_value[:D])).to eq(20)
+  end
+ 
+  it 'can return encrypted message' do
+    date_shifts = { A: '1', B: '0', C: '2', D: '5' }
+    key_shifts  = { A: '02', B: '27', C: '71', D: '15' }
+    expect(@enigma.message_encrypted(date_shifts, key_shifts)).to eq("keder ohulw")
   end
 end
