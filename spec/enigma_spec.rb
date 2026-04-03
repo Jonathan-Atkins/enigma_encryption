@@ -1,9 +1,25 @@
-require './lib/enigma'
+  require './lib/enigma'
+  require 'stringio'
 
+  RSpec.describe 'Enigma' do
+    it 'can shift a single letter correctly' do
+      final_shifts = { A: 3, B: 27, C: 73, D: 20 }
+      expect(@enigma.shift_letter('h', 0, final_shifts)).to eq('k')
+      expect(@enigma.shift_letter('e', 1, final_shifts)).to eq('e') # wraps around
+      expect(@enigma.shift_letter('l', 2, final_shifts)).to eq('d')
+      expect(@enigma.shift_letter('l', 3, final_shifts)).to eq('e')
+      expect(@enigma.shift_letter(' ', 4, final_shifts)).to eq('r')
+      # Non-char_set character (e.g. '!') should not shift
+      expect(@enigma.shift_letter('!', 5, final_shifts)).to eq('!')
+    end
 
-require 'stringio'
-
-RSpec.describe 'Enigma' do
+    it 'can apply shifts to a message' do
+      final_shifts = { A: 3, B: 27, C: 73, D: 20 }
+      @enigma.instance_variable_set(:@message, 'hello world'.split(''))
+      @enigma.instance_variable_set(:@new_message, [])
+      result = @enigma.apply_shifts(final_shifts)
+      expect(result).to eq('keder ohulw')
+    end
   before(:each) do
     input = StringIO.new("hello world\n040895\n02715\n")
     @orig_stdin = $stdin

@@ -2,7 +2,6 @@ class Enigma
   attr_reader :new_message, :message, :date
   
   def initialize
-    @new_message = []
     puts "Whats your message?"
     @message = $stdin.gets.chomp.downcase.split("")
     puts "Whats the date(DDMMYY)?"
@@ -12,6 +11,7 @@ class Enigma
     input_key = $stdin.gets.chomp
     @key = input_key.empty? ? generate_key : input_key
     @char_set = ("a".."z").to_a << " "
+    @shift_keys = [:A, :B, :C, :D]
   end
 
   def encrypt
@@ -60,27 +60,32 @@ class Enigma
     end
   end
 
-  #!Sums the values of date shift and key shifts
   def sum_shift_pair(date_value,key_value)
     date_value.to_i + key_value.to_i
   end
 
- #! Compiling encrypted message
   def message_encrypted(date_shifts, key_shifts)
     @new_message = []
-    final_shifts = final_shifts(date_shifts, key_shifts)
-    shift_keys = [:A, :B, :C, :D]
+    shifts = final_shifts(date_shifts, key_shifts)
+    apply_shifts(shifts)
+  end
+
+  def apply_shifts(final_shifts)
     @message.each_with_index do |letter, index|
-      if @char_set.include?(letter)
-        shift_key    = shift_keys[index % 4]
-        shift_amount = final_shifts[shift_key]
-        current_pos  = @char_set.index(letter)
-        new_pos      = (current_pos + shift_amount) % @char_set.length
-        @new_message << @char_set[new_pos]
-      else
-        @new_message << letter
-      end
+      @new_message << shift_letter(letter, index, final_shifts)
     end
     @new_message.join
+  end
+
+  def shift_letter(letter, index, final_shifts)
+    if @char_set.include?(letter)
+      shift_key    = @shift_keys[index % 4]
+      shift_amount = final_shifts[shift_key]
+      current_pos  = @char_set.index(letter)
+      new_pos      = (current_pos + shift_amount) % @char_set.length
+      @char_set[new_pos]
+    else
+      letter
+    end
   end
 end
