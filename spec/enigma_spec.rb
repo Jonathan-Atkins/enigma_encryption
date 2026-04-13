@@ -9,6 +9,13 @@ RSpec.describe 'Enigma' do
     expect(@enigma).to be_an(Object)
   end
 
+  it ' can set the date if none is provided' do
+    enigma = Enigma.new("hellow world", "02715", nil)
+    today  = Date.today.strftime("%d%m%y")
+    
+    expect(enigma.date).to eq(today)
+  end
+
   it 'can encrypt a message with a key and date' do 
     expect(@enigma.encrypt).to eq(
       {
@@ -41,6 +48,13 @@ RSpec.describe 'Enigma' do
 
   it 'can generate a key' do
     expect(@enigma.generate_key).to match(/^\d{5}$/)
+  end
+
+  it 'generates a key if one is not provided' do
+    enigma = Enigma.new("hello world", nil, "040895")
+
+    expect(enigma.encrypt[:key]).to match(/^\d{5}$/)
+    expect(enigma.encrypt[:date]).to eq("040895")
   end
 
   it 'can set key_shift values' do

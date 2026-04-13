@@ -1,9 +1,11 @@
+require 'date'
+
 class Enigma
   attr_reader :new_message, :message, :date
   
   def initialize(message, key = nil, date = nil)
     @message     = message.downcase.split("")
-    @date        = date || Time.now.strftime("%d%m%y")
+    @date        = date || Date.today.strftime("%d%m%y")
     @key         = key || generate_key
     @char_set    = ("a".."z").to_a << " "
     @shift_keys  = [:A, :B, :C, :D]
