@@ -4,14 +4,18 @@ class Enigma
   def initialize
     puts "Whats your message?"
     @message = $stdin.gets.chomp.downcase.split("")
+    
     puts "Whats the date(DDMMYY)?"
     input_date = $stdin.gets.chomp
     @date = input_date.empty? ? Time.now.strftime("%d%m%y") : input_date
+    
     puts "Whats your key?(must be 5 numbers)"
     input_key = $stdin.gets.chomp
     @key = input_key.empty? ? generate_key : input_key
+    
     @char_set = ("a".."z").to_a << " "
     @shift_keys = [:A, :B, :C, :D]
+    @new_message = []
   end
 
   def encrypt
@@ -65,7 +69,6 @@ class Enigma
   end
 
   def message_encrypted(date_shifts, key_shifts)
-    @new_message = []
     shifts = final_shifts(date_shifts, key_shifts)
     apply_shifts(shifts)
   end
