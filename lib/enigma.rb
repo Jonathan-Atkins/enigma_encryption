@@ -7,7 +7,6 @@ class Enigma
     @key         = key || generate_key
     @char_set    = ("a".."z").to_a << " "
     @shift_keys  = [:A, :B, :C, :D]
-    @new_message = []
   end
 
   def encrypt
@@ -60,10 +59,11 @@ class Enigma
   end
 
   def apply_shifts(final_shifts)
+    new_message = []
     @message.each_with_index do |letter, index|
-      @new_message << shift_letter(letter, index, final_shifts)
+      new_message << shift_letter(letter, index, final_shifts)
     end
-    @new_message.join
+    new_message.join
   end
 
   def shift_letter(letter, index, final_shifts)

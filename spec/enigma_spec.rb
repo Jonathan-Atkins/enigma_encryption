@@ -1,6 +1,4 @@
   require './lib/enigma'
-  require 'stringio'
-
 
 RSpec.describe 'Enigma' do
   before(:each) do
