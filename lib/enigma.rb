@@ -1,20 +1,12 @@
 class Enigma
   attr_reader :new_message, :message, :date
   
-  def initialize
-    puts "Whats your message?"
-    @message = $stdin.gets.chomp.downcase.split("")
-    
-    puts "Whats the date(DDMMYY)?"
-    input_date = $stdin.gets.chomp
-    @date = input_date.empty? ? Time.now.strftime("%d%m%y") : input_date
-    
-    puts "Whats your key?(must be 5 numbers)"
-    input_key = $stdin.gets.chomp
-    @key = input_key.empty? ? generate_key : input_key
-    
-    @char_set = ("a".."z").to_a << " "
-    @shift_keys = [:A, :B, :C, :D]
+  def initialize(message, key = nil, date = nil)
+    @message     = message.downcase.split("")
+    @date        = date || Time.now.strftime("%d%m%y")
+    @key         = key || generate_key
+    @char_set    = ("a".."z").to_a << " "
+    @shift_keys  = [:A, :B, :C, :D]
     @new_message = []
   end
 
@@ -58,12 +50,6 @@ class Enigma
     }
   end
 
-  def final_shifts(date_shifts, key_shifts)
-    date_shifts.each_with_object({}) do |(letter,value), result|
-      result[letter] = sum_shift_pair(value,key_shifts[letter])  
-    end
-  end
-
   def sum_shift_pair(date_value,key_value)
     date_value.to_i + key_value.to_i
   end
@@ -89,6 +75,12 @@ class Enigma
       @char_set[new_pos]
     else
       letter
+    end
+  end
+
+  def final_shifts(date_shifts, key_shifts)
+    date_shifts.each_with_object({}) do |(letter,value), result|
+      result[letter] = sum_shift_pair(value,key_shifts[letter])  
     end
   end
 end

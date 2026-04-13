@@ -4,14 +4,7 @@
 
 RSpec.describe 'Enigma' do
   before(:each) do
-    input = StringIO.new("hello world\n040895\n02715\n")
-    @orig_stdin = $stdin
-    $stdin = input
-    @enigma = Enigma.new
-  end
-
-  after(:each) do
-    $stdin = @orig_stdin
+    @enigma = Enigma.new("hello world", "02715", "040895")
   end
 
   it 'exists' do
